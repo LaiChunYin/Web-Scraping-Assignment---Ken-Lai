@@ -3,7 +3,7 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
+from scrapy import signals, exceptions
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -53,7 +53,7 @@ class ScraperSpiderMiddleware:
             yield r
 
     def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f"Spider opened: {spider.name}")
 
 
 class ScraperDownloaderMiddleware:
@@ -87,7 +87,11 @@ class ScraperDownloaderMiddleware:
         # - return a Response object
         # - return a Request object
         # - or raise IgnoreRequest
-        return response
+        if response.status >= 200 and response.status <= 299:
+            return response
+        else:
+            spider.logger.error(f"Request failed with status {response.status}: {response.url}")
+            raise exceptions.IgnoreRequest(f"Request failed with status {response.status}")
 
     def process_exception(self, request, exception, spider):
         # Called when a download handler or a process_request()
@@ -97,7 +101,9 @@ class ScraperDownloaderMiddleware:
         # - return None: continue processing this exception
         # - return a Response object: stops process_exception() chain
         # - return a Request object: stops process_exception() chain
-        pass
+        if isinstance(exception, exceptions.IgnoreRequest):
+            spider.logger.info(f"Request ignored due to processing failure: {request.url}")
+            return None  # This will stop further exception processing
 
     def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f"Spider opened: {spider.name}")
