@@ -1,10 +1,6 @@
 import scrapy
-from scrapy_splash import SplashRequest
-from scrapy_selenium import SeleniumRequest
 from ..items import ProductItem
 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from scrapy_playwright.page import PageMethod
 
 class TopsOnlineSpider(scrapy.Spider):
@@ -29,55 +25,8 @@ class TopsOnlineSpider(scrapy.Spider):
     # used to keep track of how many items failed to be extracted in the pipeline
     failed_items = 0 
 
-    def generate_script_to_wait_for(self, element):
-        return f"""
-            function main(splash)
-                assert(splash:go(splash.args.url))
-                assert(splash:wait(1))
-
-                local function check_element()
-                    local element = splash:select('{element}')
-                    if element then
-                        return splash:html()
-                    else
-                        splash:wait(0.5)
-                        return check_element()
-                    end
-                end
-
-                return check_element()
-            end
-        """
-
-    scroll_down_product_infinite_list_script = """
-        function main(splash, args)
-        splash:go(args.url)
-        local scroll = splash:jsfunc([[
-            function scrollWithDelay() {
-                for (let i = 0; i < 5; i++) {
-                    setTimeout(() => window.scrollTo(0, document.body.scrollHeight), i * 2000);
-                }
-            }
-        ]])
-
-        scroll()
-
-        local function check_element()
-        local element = splash:select('.product-item .mt-product-item a')
-        if element then
-            return splash:html()
-        else
-            splash:wait(0.5)
-            return check_element()
-        end
-
-        return check_element()
-
-        end
-    """
-
     # the scripts will keep scrolling to the bottom of the page until no more new products are loaded
-    scrolling_script = """
+    scrolling_infinite_list_script = """
         async () => {
             let currentItems = 0
 
@@ -111,9 +60,7 @@ class TopsOnlineSpider(scrapy.Spider):
         self.logger.debug("start running here")
         for url in self.start_urls:
             self.logger.debug(f"url {url}")
-            # yield SplashRequest(url, callback=self.parse, endpoint='execute', args={"timeout": 60, "lua_source": self.generate_script_to_wait_for(".pc-sidenavbar a")})
-            # yield SeleniumRequest(url=url, callback=self.parse, wait_time=20, wait_until=EC.element_to_be_clickable((By.CSS_SELECTOR, ".pc-sidenavbar a")))
-            # yield SeleniumRequest(url=url, callback=self.parse, wait_time=20)
+
             yield scrapy.Request(url, callback=self.parse, meta={
                 "playwright": True,
                 "playwright_page_methods": [
@@ -139,9 +86,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     if not category_url.startswith('http'):
                         category_url = response.urljoin(category_url)
                     self.logger.debug(f"cat url after  {category_url}")
-                    # yield SplashRequest(category_url, callback=self.parse_category, endpoint='execute', args={"timeout": 60, "lua_source": self.generate_script_to_wait_for(".plp-carousel__link")})
-                    # yield SeleniumRequest(url=category_url, callback=self.parse_category, wait_time=20, wait_until=EC.element_to_be_clickable((By.CSS_SELECTOR, ".plp-carousel__link")))
-                    # yield SeleniumRequest(url=category_url, callback=self.parse_category, wait_time=20)
+
                     yield scrapy.Request(category_url, callback=self.parse_category, meta={
                         "extra_data": {
                             "category": category
@@ -151,14 +96,14 @@ class TopsOnlineSpider(scrapy.Spider):
                             PageMethod("wait_for_selector", ".plp-carousel__link"),
                         ],
                     })
-                    # yield SplashRequest(category_url, callback=self.parse_category, args={"wait": 20, "timeout": 20})
+
         except Exception as e:
             self.logger.error(f'Unexpected error in parse: {e}')
 
     def parse_category(self, response):
         try:
             self.logger.debug("parsing category ")
-            # self.logger.debug("parsing category ")
+
             subcategory_selectors = response.css(".plp-carousel")
 
             self.logger.debug(f"sub cats are {len(subcategory_selectors)}")
@@ -172,8 +117,6 @@ class TopsOnlineSpider(scrapy.Spider):
 
                 self.logger.debug(f"view all url is {view_all_url}")
 
-                # yield SplashRequest(view_all_url, callback=self.p, endpoint='execute', args={"timeout": 60, "lua_source": self.scroll_down_script})
-                # yield SeleniumRequest(url=view_all_url, callback=self.p, wait_time=20)
                 yield scrapy.Request(view_all_url, callback=self.parse_subcategory, meta={
                     "extra_data": {**response.meta["extra_data"], "subcategory": subcategory},
                     "playwright": True,
@@ -181,7 +124,7 @@ class TopsOnlineSpider(scrapy.Spider):
                         # wait for the items to be loaded first
                         PageMethod("wait_for_selector", ".product-item-image"),
                         # scroll to the bottom of the list to load more items
-                        PageMethod("evaluate", self.scrolling_script),
+                        PageMethod("evaluate", self.scrolling_infinite_list_script),
                     ],
                 })
         except Exception as e:
@@ -194,8 +137,7 @@ class TopsOnlineSpider(scrapy.Spider):
             for selector in product_selectors:
                 product_detail_url = selector.attrib["href"]
                 self.logger.debug(f"detail url is {product_detail_url}")
-                # yield SplashRequest(product_detail_url, self.parse_details, endpoint='execute', args={"timeout": 60}, meta={"url": product_detail_url})
-                # yield SeleniumRequest(url=product_detail_url, callback=self.parse_details, wait_time=200, meta={"url": product_detail_url})
+
                 yield scrapy.Request(product_detail_url, callback=self.parse_details, meta={
                     "extra_data": {
                         **response.meta["extra_data"],
