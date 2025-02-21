@@ -12,7 +12,6 @@ from itemadapter import ItemAdapter
 class ScraperPipeline:
     def split_name_quantity(self, name):
         # Regular expression to find volume patterns such as numbers followed by ml, L, g, etc.
-        # Adjust the pattern to capture more cases as needed
         pattern = re.compile(r'\s+((\d+\.?\d*\s*(ml|L|g|kg|oz|pcs|lb|cc|oz|gal|m|cm))\.?)', re.IGNORECASE)
         
         match = pattern.search(name)
@@ -33,6 +32,7 @@ class ScraperPipeline:
         return match.group(0).strip() if match else ""
     
     def convert_price_to_float(self, price):
+        # the price string might contain commas
         price = re.sub(r'[^\d\.]', '', price)
         return float(price)
 

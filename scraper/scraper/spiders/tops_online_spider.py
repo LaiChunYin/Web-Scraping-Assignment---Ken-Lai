@@ -9,18 +9,18 @@ class TopsOnlineSpider(scrapy.Spider):
     start_urls = ["https://www.tops.co.th/en"]
 
     categories_to_be_scrapped = set([
-        # "OTOP",
-        # "Only At Tops",
-        # "Fruits & Vegetables",
-        # "Meat & Seafood",
-        # "Fresh Food & Bakery",
+        "OTOP",
+        "Only At Tops",
+        "Fruits & Vegetables",
+        "Meat & Seafood",
+        "Fresh Food & Bakery",
         "Pantry & Ingredients",
-        # "Snacks & Desserts",
-        # "Beverages",
-        # "Health & Beauty Care",
-        # "Mom & Kids",
-        # "Household & Merit",
-        # "PetNme",
+        "Snacks & Desserts",
+        "Beverages",
+        "Health & Beauty Care",
+        "Mom & Kids",
+        "Household & Merit",
+        "PetNme",
     ])
     # used to keep track of how many items failed to be extracted in the pipeline
     failed_items = 0 
@@ -43,18 +43,6 @@ class TopsOnlineSpider(scrapy.Spider):
             }
         }
     """
-
-        # const scrollInterval = setInterval(() => {
-        #     window.scrollTo(0, document.body.scrollHeight)
-        #     setTimeout(() => {
-        #         let newItems = document.querySelectorAll(".product-item a").length
-            
-        #         if (newItems === currentItems) {
-        #             clearInterval(scrollInterval)
-        #         }
-        #         currentItems = newItems
-        #     }, 5000) // Wait for new content to load
-        # }, 5500)
     
     def start_requests(self):
         self.logger.debug("start running here")
@@ -71,6 +59,9 @@ class TopsOnlineSpider(scrapy.Spider):
 
 
     def parse(self, response):
+        '''
+            Extract categories from the main page
+        '''
         try:
             self.logger.debug("start parsing")
             category_selectors = response.css(".pc-sidenavbar a")
@@ -101,13 +92,16 @@ class TopsOnlineSpider(scrapy.Spider):
             self.logger.error(f'Unexpected error in parse: {e}')
 
     def parse_category(self, response):
+        '''
+            Extract subcategories from each category
+        '''
         try:
             self.logger.debug("parsing category ")
 
             subcategory_selectors = response.css(".plp-carousel")
 
             self.logger.debug(f"sub cats are {len(subcategory_selectors)}")
-            for selector in [subcategory_selectors[0]]:
+            for selector in subcategory_selectors:
                 subcategory = selector.css(".plp-carousel__title-name::text").get()
                 view_all_url = selector.css(".plp-carousel__link").attrib["href"]
                 self.logger.debug(f"subcat is {subcategory} {view_all_url}")
@@ -131,6 +125,9 @@ class TopsOnlineSpider(scrapy.Spider):
             self.logger.error(f'Unexpected error in parse_category: {e}')
 
     def parse_subcategory(self, response):
+        '''
+            Extract the url to the product details page of each product in the product list
+        '''
         try:
             product_selectors = response.css(".product-item a")
                 
@@ -154,6 +151,9 @@ class TopsOnlineSpider(scrapy.Spider):
 
 
     def parse_details(self, response):
+        '''
+            Extract product information from the product detail page
+        '''
         try:
             product_item = ProductItem()
 
