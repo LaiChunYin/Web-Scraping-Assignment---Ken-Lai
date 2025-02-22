@@ -116,7 +116,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     "playwright": True,
                     "playwright_page_methods": [
                         # wait for the items to be loaded first
-                        PageMethod("wait_for_selector", ".product-item-image", timeout = 300 * 1000),
+                        PageMethod("wait_for_selector", "img.product-item-image", timeout = 300 * 1000),
                         # scroll to the bottom of the list to load more items
                         PageMethod("evaluate", self.scrolling_infinite_list_script),
                     ],
@@ -163,7 +163,7 @@ class TopsOnlineSpider(scrapy.Spider):
             product_item["bar_code_number"] = response.css(".product-Details-sku::text").get()
             product_item["product_details"] = response.css('.accordion-property').xpath('.//text()').getall()
             product_item["price"] = response.css(".product-Details-current-price::text").get()
-            product_item["labels"] = response.css(".product-Details-seasonal-label::text, .central_container .main-content-wrapper .promo-name").xpath('.//text()').getall()
+            product_item["labels"] = response.css(".product-Details-seasonal-label::text, .product-Details-promo .promo-name").xpath('.//text()').getall()
             product_item["url"] = response.meta["extra_data"]["url"]
             product_item["category"] = response.meta["extra_data"]["category"]
             product_item["subcategory"] = response.meta["extra_data"]["subcategory"]
