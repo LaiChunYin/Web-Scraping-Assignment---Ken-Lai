@@ -52,16 +52,16 @@ class TopsOnlineSpider(scrapy.Spider):
             yield scrapy.Request(url, callback=self.parse, meta={
                 "playwright": True,
                 "playwright_page_methods": [
-                    PageMethod("wait_for_selector", ".pc-sidenavbar a"),
+                    PageMethod("wait_for_selector", ".pc-sidenavbar a", timeout = 300 * 1000),
                     PageMethod("wait_for_timeout", 1000)
                 ],
             })
 
 
     def parse(self, response):
-        '''
+        """
             Extract categories from the main page
-        '''
+        """
         try:
             self.logger.debug("start parsing")
             category_selectors = response.css(".pc-sidenavbar a")
@@ -84,7 +84,7 @@ class TopsOnlineSpider(scrapy.Spider):
                         }, 
                         "playwright": True,
                         "playwright_page_methods": [
-                            PageMethod("wait_for_selector", ".plp-carousel__link"),
+                            PageMethod("wait_for_selector", ".plp-carousel__link", timeout = 300 * 1000),
                         ],
                     })
 
@@ -92,9 +92,9 @@ class TopsOnlineSpider(scrapy.Spider):
             self.logger.error(f'Unexpected error in parse: {e}')
 
     def parse_category(self, response):
-        '''
+        """
             Extract subcategories from each category
-        '''
+        """
         try:
             self.logger.debug("parsing category ")
 
@@ -116,7 +116,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     "playwright": True,
                     "playwright_page_methods": [
                         # wait for the items to be loaded first
-                        PageMethod("wait_for_selector", ".product-item-image"),
+                        PageMethod("wait_for_selector", ".product-item-image", timeout = 300 * 1000),
                         # scroll to the bottom of the list to load more items
                         PageMethod("evaluate", self.scrolling_infinite_list_script),
                     ],
@@ -125,9 +125,9 @@ class TopsOnlineSpider(scrapy.Spider):
             self.logger.error(f'Unexpected error in parse_category: {e}')
 
     def parse_subcategory(self, response):
-        '''
+        """
             Extract the url to the product details page of each product in the product list
-        '''
+        """
         try:
             product_selectors = response.css(".product-item a")
                 
@@ -143,7 +143,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     "playwright": True,
                     "playwright_page_methods": [
                         # wait for the items to be loaded first
-                        PageMethod("wait_for_selector", ".product-Details-page-root .add-to-cart"),
+                        PageMethod("wait_for_selector", ".product-Details-page-root .add-to-cart", timeout = 300 * 1000),
                     ],
                 })
         except Exception as e:
@@ -151,14 +151,14 @@ class TopsOnlineSpider(scrapy.Spider):
 
 
     def parse_details(self, response):
-        '''
+        """
             Extract product information from the product detail page
-        '''
+        """
         try:
             product_item = ProductItem()
 
             product_item["product_name"] = response.css(".product-tile__name::text").get()
-            product_item["product_images"] = [selector.attrib["src"] for selector in response.css(".product-Details-images img")]
+            product_item["product_images"] = [selector.attrib["src"] for selector in response.css(".product-Details-images img") if "src" in selector.attrib]
             # product_item["quantity"] = response.css("").get()
             product_item["bar_code_number"] = response.css(".product-Details-sku::text").get()
             product_item["product_details"] = response.css('.accordion-property').xpath('.//text()').getall()

@@ -69,6 +69,8 @@ Although this project did not suffer from anti-bot challenges, it is crucial to 
 
 ## Sample Output
 
+The complete output can be found in /scraper/data.json
+
 ```json
 [
 {
