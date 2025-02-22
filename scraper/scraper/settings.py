@@ -51,7 +51,8 @@ ROBOTSTXT_OBEY = True
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-#    "scraper.middlewares.ScraperDownloaderMiddleware": 543,
+    # "scraper.middlewares.ScraperDownloaderMiddleware": 540,
+    "scraper.middlewares.PlaywrightRetryMiddleware": 543,
     # "rotating_proxies.middlewares.RotatingProxyMiddleware": 610,
     # "rotating_proxies.middlewares.BanDetectionMiddleware": 620,
 }
@@ -122,4 +123,4 @@ PLAYWRIGHT_LAUNCH_OPTIONS = {
 
 DOWNLOAD_TIMEOUT = 300
 # PLAYWRIGHT_TIMEOUT = 300
-PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 300 * 1000
+PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 600 * 1000

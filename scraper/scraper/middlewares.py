@@ -7,6 +7,7 @@ from scrapy import signals, exceptions
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+from playwright.async_api import TimeoutError
 
 
 class ScraperSpiderMiddleware:
@@ -106,4 +107,34 @@ class ScraperDownloaderMiddleware:
             return None  # This will stop further exception processing
 
     def spider_opened(self, spider):
+        spider.logger.info(f"Spider opened: {spider.name}")
+
+class PlaywrightRetryMiddleware:
+    def __init__(self, crawler):
+        self.retry_times = crawler.settings.getint('RETRY_TIMES', 3)
+        self.retry_http_codes = set(int(x) for x in crawler.settings.getlist('RETRY_HTTP_CODES'))
+        self.priority_adjust = crawler.settings.getint('RETRY_PRIORITY_ADJUST', -1)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        s = cls(crawler)
+        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        return s
+
+    def process_exception(self, request, exception, spider):
+        if isinstance(exception, TimeoutError) and request.meta.get("playwright", False):
+            retries = request.meta.get('retry_times', 0) + 1
+
+            if retries <= self.retry_times:
+                spider.logger.info(f"Retrying {request.url} due to playwright timeout (retry {retries}/{self.retry_times}).")
+                retryreq = request.copy()
+                retryreq.meta['retry_times'] = retries
+                retryreq.dont_filter = True
+                retryreq.priority = request.priority + self.priority_adjust
+                return retryreq
+            else:
+                spider.logger.info(f"Gave up retrying {request.url} after {retries} attempts.")
+
+    def spider_opened(self, spider):
+        spider.logger.info(f"PlaywrightRetryMiddleware initialized: RETRY_TIMES={self.retry_times}, RETRY_HTTP_CODES={list(self.retry_http_codes)}, RETRY_PRIORITY_ADJUST={self.priority_adjust}")
         spider.logger.info(f"Spider opened: {spider.name}")
