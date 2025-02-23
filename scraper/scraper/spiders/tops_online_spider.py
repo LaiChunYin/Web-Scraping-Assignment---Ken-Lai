@@ -32,7 +32,7 @@ class TopsOnlineSpider(scrapy.Spider):
 
             while (true) {
                 window.scrollBy(0, document.body.scrollHeight)
-                await new Promise(r => setTimeout(r, 3000)); // Wait for new content to load
+                await new Promise(r => setTimeout(r, 5000)); // Wait for new content to load
                 
                 let newItems = document.querySelectorAll(".product-item a").length
         
@@ -84,6 +84,7 @@ class TopsOnlineSpider(scrapy.Spider):
                         }, 
                         "playwright": True,
                         "playwright_page_methods": [
+                            PageMethod("wait_for_timeout", 3000),
                             PageMethod("wait_for_selector", ".plp-carousel__link", timeout = 300 * 1000),
                         ],
                     })
@@ -115,6 +116,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     "extra_data": {**response.meta["extra_data"], "subcategory": subcategory},
                     "playwright": True,
                     "playwright_page_methods": [
+                        PageMethod("wait_for_timeout", 3000),
                         # wait for the items to be loaded first
                         PageMethod("wait_for_selector", "img.product-item-image", timeout = 300 * 1000),
                         # scroll to the bottom of the list to load more items
@@ -142,6 +144,7 @@ class TopsOnlineSpider(scrapy.Spider):
                     },
                     "playwright": True,
                     "playwright_page_methods": [
+                        PageMethod("wait_for_timeout", 3000),
                         # wait for the items to be loaded first
                         PageMethod("wait_for_selector", ".product-Details-page-root .add-to-cart", timeout = 300 * 1000),
                     ],
