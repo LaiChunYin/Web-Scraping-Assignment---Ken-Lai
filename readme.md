@@ -1,7 +1,13 @@
 # Web Scraping Assignment - Ken Lai
 
 ### Approach
-The initial step in developing the scraping solution involved thorough research and analysis of the target website, focusing particularly on how content is dynamically loaded. The scraping script was developed using Scrapy, a robust scraping framework in Python, combined with Playwright, an advanced automation library that excels in interacting with dynamic web pages. This combination provides a powerful solution for tackling common challenges faced in web scraping projects: including:
+The first step in creating the scraper is to carefully study the target website, focusing on how it loads content dynamically. The scraping process can be broken down into four steps: 
+- **Step 1**: Go to the main page and collect all the product categories
+- **Step 2**: For each category, find links to each of its subcategories
+- **Step 3**: Keep scrolling down the subcategory pages until no more new products are loaded, to gather links to each product's details
+- **Step 4**: Extract the required information from each product's page
+
+Scrapy and Playwright were chosen to build the scraper. These tools are great for handling common challenges in web scraping projects, including:
 - **Dynamic Content Loading**:
 Playwright is utilized to handle JavaScript-heavy elements and AJAX-loaded content, ensuring complete page data is captured.
 - **Error Handling**: 
